@@ -1,3 +1,4 @@
+INSERT INTO tournaments (id,name) VALUES (1, 'test tourney');
 
 INSERT INTO players (name) VALUES ('Chen Lu');
 INSERT INTO players (name) VALUES ('Aleka Cheung');

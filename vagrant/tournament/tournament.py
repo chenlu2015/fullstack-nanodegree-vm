@@ -29,13 +29,17 @@ def connect():
     return psycopg2.connect("dbname=tournament")
 
 
+def deleteTournaments():
+    """deletes all tournaments in db"""
+    with get_cursor() as cursor:
+        cursor.execute("DELETE FROM tournaments;")
+
 def deleteMatches():
     """Remove all the match records from the database."""
     #helper function to get connection & cursor & commit & close
     with get_cursor() as cursor:
          #execute query
         cursor.execute("DELETE FROM matches;")
-
 
 def deletePlayers():
     """Remove all the player records from the database."""
@@ -52,6 +56,10 @@ def countPlayers():
         cursor.execute("SELECT COUNT(*) FROM players;")
         num = cursor.fetchone()
     return num[0]
+
+def createTournament(t_id, name):
+    with get_cursor() as cursor:
+        cursor.execute("INSERT INTO tournaments (id, name) VALUES (%s,%s)", (t_id,name))
 
 
 def registerPlayer(name, tournament_id):
@@ -94,8 +102,8 @@ def playerStandings(tournament_id):
     #         '''
 
     query = '''
-        select id,name,wins,total_matches from player_standings ps join opponent_match_wins omw on (ps.tournament_id = omw.tournament_id) and (ps.id = omw.player_id) and (ps.tournament_id = (1)) order by wins desc, omw.opponent_match_wins desc;
-    '''
+        select player_id,name,wins,total_matches from player_standings where (tournament_id = (%s));
+            '''
     results = [];
     with get_cursor() as cursor:
          #execute query

@@ -13,6 +13,12 @@ CREATE DATABASE tournament;
 
 --CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- import the uuid-ossp module to generate uuids, but need to be superuser..?
 
+CREATE TABLE tournaments
+  (
+    id INT PRIMARY KEY,
+    name VARCHAR(90)
+  );
+
 CREATE TABLE players
    (
       --id UUID PRIMARY KEY DEFAULT uuid_generate_v1(),
@@ -20,12 +26,10 @@ CREATE TABLE players
       name VARCHAR(90) NOT NULL
    );
 
-
-
 CREATE TABLE matches
    (
    	  match_id SERIAL PRIMARY KEY,
-      tournament_id INT NOT NULL,
+      tournament_id INT references tournaments(id) ON DELETE CASCADE,
       winner_id INT references players(id) ON DELETE CASCADE,
       loser_id INT references players(id) ON DELETE CASCADE
    );
@@ -34,14 +38,33 @@ CREATE TABLE matches
 CREATE TABLE tournament_registrations
    (  
       registration_id SERIAL PRIMARY KEY,
-      tournament_id INT NOT NULL,
+      tournament_id INT references tournaments(id) ON DELETE CASCADE,
       player_id INT references players(id) ON DELETE CASCADE
    );
 
+CREATE VIEW opponent_match_wins AS (
+
+SELECT tournament_id, player_id, (SELECT coalesce(sum(opp_wins.wins),0) from (with 
+        win_temp as (select winner_id, count(winner_id) win_cnt from matches where winner_id in (select id from players) group by winner_id)
+      select 
+          p.id, p.name, 
+          coalesce(w.win_cnt,0) wins 
+      from 
+          players p 
+          left join win_temp w on (p.id = w.winner_id) 
+      where 
+          p.id in (select player_id from tournament_registrations as r where r.tournament_id = (tournament_registrations.tournament_id))
+          and 
+          p.id in (select m.loser_id as player_id from matches as m where m.winner_id = (players.id))
+      ) as opp_wins) AS omw
+  FROM
+    players join tournament_registrations on (players.id = tournament_registrations.player_id)
+);
 
 CREATE VIEW player_standings AS (
-SELECT 
-    tournament_id, id, name, wins, losses, total_matches
+select standings.tournament_id, opponent_match_wins.player_id, name, wins, losses, total_matches, omw  from 
+  (SELECT 
+    tournament_registrations.tournament_id, id, name, wins, losses, total_matches
     from 
     (
         with 
@@ -59,26 +82,9 @@ SELECT
         where 
             p.id in (select id from players)
     ) as t1 left join tournament_registrations on (t1.id = tournament_registrations.player_id)
-);
-
-CREATE VIEW opponent_match_wins AS (
-
-SELECT tournament_id, player_id, (SELECT coalesce(sum(opp_wins.wins),0) from (with 
-        win_temp as (select winner_id, count(winner_id) win_cnt from matches where winner_id in (select id from players) group by winner_id)
-      select 
-          p.id, p.name, 
-          coalesce(w.win_cnt,0) wins 
-      from 
-          players p 
-          left join win_temp w on (p.id = w.winner_id) 
-      where 
-          p.id in (select player_id from tournament_registrations as r where r.tournament_id = (tournament_registrations.tournament_id))
-          and 
-          p.id in (select m.loser_id as player_id from matches as m where m.winner_id = (players.id))
-      ) as opp_wins) AS opponent_match_wins
-  FROM
-    players join tournament_registrations on (players.id = tournament_registrations.player_id)
-);
+  ) AS standings join 
+  opponent_match_wins on (standings.id = opponent_match_wins.player_id) and (standings.tournament_id = opponent_match_wins.tournament_id) order by wins desc, omw desc
+  );
 
 select * from player_standings;
 

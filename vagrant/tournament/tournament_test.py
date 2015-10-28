@@ -3,9 +3,15 @@
 # Test cases for tournament.py
 
 from tournament import *
-    
+
+
+
 curr_tournament_id = 1; #current tournament
 
+
+def testDeleteTournaments():
+    deleteTournaments()
+    print "0. Old tournaments can be deleted."
 
 def testDeleteMatches():
     deleteMatches()
@@ -29,6 +35,9 @@ def testCount():
         raise ValueError("After deleting, countPlayers should return zero.")
     print "3. After deleting, countPlayers() returns zero."
 
+def testCreateTournament(t_id, name):
+    createTournament(t_id, name);
+    print "4. Can create tournaments"
 
 def testRegister():
     deleteMatches()
@@ -38,7 +47,7 @@ def testRegister():
     if c != 1:
         raise ValueError(
             "After one player registers, countPlayers() should be 1.")
-    print "4. After registering a player, countPlayers() returns 1."
+    print "5. After registering a player, countPlayers() returns 1."
 
 
 def testRegisterCountDelete():
@@ -56,7 +65,7 @@ def testRegisterCountDelete():
     c = countPlayers()
     if c != 0:
         raise ValueError("After deleting, countPlayers should return zero.")
-    print "5. Players can be registered and deleted."
+    print "6. Players can be registered and deleted."
 
 
 def testStandingsBeforeMatches():
@@ -79,7 +88,7 @@ def testStandingsBeforeMatches():
     if set([name1, name2]) != set(["Melpomene Murray", "Randy Schwartz"]):
         raise ValueError("Registered players' names should appear in standings, "
                          "even if they have no matches played.")
-    print "6. Newly registered players appear in the standings with no matches."
+    print "7. Newly registered players appear in the standings with no matches."
 
 
 def testReportMatches():
@@ -101,7 +110,7 @@ def testReportMatches():
             raise ValueError("Each match winner should have one win recorded.")
         elif i in (id2, id4) and w != 0:
             raise ValueError("Each match loser should have zero wins recorded.")
-    print "7. After a match, players have updated standings."
+    print "8. After a match, players have updated standings."
 
 
 def testPairings():
@@ -130,13 +139,15 @@ def testPairings():
     if correct_pairs != actual_pairs:
         raise ValueError(
             "After one match, players with one win should be paired.")
-    print "8. After one match, players with one win are paired."
+    print "9. After one match, players with one win are paired."
 
 
 if __name__ == '__main__':
+    testDeleteTournaments()
     testDeleteMatches()
     testDelete()
     testCount()
+    testCreateTournament(curr_tournament_id, "my test tourney")
     testRegister()
     testRegisterCountDelete()
     testStandingsBeforeMatches()
