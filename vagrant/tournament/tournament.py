@@ -5,7 +5,24 @@
 
 import psycopg2
 from decimal import * #handle postgres return type Decimal
+from contextlib import contextmanager
 
+@contextmanager
+def get_cursor():
+    """
+    Don't forget to document this function if you use it!
+    """
+    conn = connect()
+    cur = conn.cursor()
+    try:
+        yield cur
+    except:
+        raise
+    else:
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
@@ -14,36 +31,28 @@ def connect():
 
 def deleteMatches():
     """Remove all the match records from the database."""
-    #get db conn
-    conn = connect()
-
-    #get cursor to execute queries
-    c = conn.cursor()
-
-    #execute query
-    c.execute("DELETE FROM matches;")
-
-    #save the transaction to db and close conn
-    conn.commit()
-    conn.close
+    #helper function to get connection & cursor & commit & close
+    with get_cursor() as cursor:
+         #execute query
+        cursor.execute("DELETE FROM matches;")
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
-    conn = connect()
-    c = conn.cursor()
-    c.execute("DELETE FROM players;")
-    conn.commit()
-    conn.close
+    #helper function to get connection & cursor & commit & close
+    with get_cursor() as cursor:
+         #execute query
+        cursor.execute("DELETE FROM players;")
 
 def countPlayers():
     """Returns the number of players currently registered."""
-    conn = connect()
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM players;")
-    num = c.fetchone()
-    conn.close
+    num = 0;
+    with get_cursor() as cursor:
+         #execute query
+        cursor.execute("SELECT COUNT(*) FROM players;")
+        num = cursor.fetchone()
     return num[0]
+
 
 def registerPlayer(name, tournament_id):
     """Adds a player to the tournament database.
@@ -54,19 +63,13 @@ def registerPlayer(name, tournament_id):
     Args:
       name: the player's full name (need not be unique).
     """
-    conn = connect()
-    c = conn.cursor()
-
-    #SQL safe parameter insertion
-    c.execute("INSERT INTO players (name) VALUES (%s) RETURNING id", (name,))
-    p_id = c.fetchone() #get the player ID returned from the insert above
-    #print p_id[0]
-
-    #add the player to the correct tournament
-    c.execute("INSERT INTO tournament_registrations (tournament_id, player_id) VALUES (%s,%s)", (tournament_id,p_id[0]))
-    
-    conn.commit() #commit the transaction
-    conn.close
+    p_id = 0
+    with get_cursor() as cursor:
+        #SQL safe parameter insertion
+        cursor.execute("INSERT INTO players (name) VALUES (%s) RETURNING id", (name,))
+        p_id = cursor.fetchone()
+        #add the player to the correct tournament
+        cursor.execute("INSERT INTO tournament_registrations (tournament_id, player_id) VALUES (%s,%s)", (tournament_id,p_id[0]))
 
 def playerStandings(tournament_id):
     """Returns a list of the players and their win records, sorted by wins.
@@ -91,28 +94,14 @@ def playerStandings(tournament_id):
     #         '''
 
     query = '''
-        select id,name,wins,total_matches from player_standings p where tournament_id = (%s);
+        select id,name,wins,total_matches from player_standings ps join opponent_match_wins omw on (ps.tournament_id = omw.tournament_id) and (ps.id = omw.player_id) and (ps.tournament_id = (1)) order by wins desc, omw.opponent_match_wins desc;
     '''
-    conn = connect()
-    c = conn.cursor()
-    c.execute(query, (tournament_id,)) #execute the query with the specified tournament ID data to retrieve
-    results = c.fetchall();
-    conn.close
-
-
-    #check OMW and sort by those too.
-    for i in range (0, len(results)):
-        n = getOpponentWins(tournament_id,results[i][0])
-        results[i] +=  n # add wins to tuple
-
-
-    #sort results based on wins & the opponent wins
-    s_results = sorted(results, key = lambda x : (-x[2], -x[4])) # column 2 = wins, column 4 = OMW
-
-    for i in range (0, len(s_results)):
-        s_results[i] = s_results[i][:-1] # remove the extra column from output after sorting
-    #return final result
-    return s_results;
+    results = [];
+    with get_cursor() as cursor:
+         #execute query
+        cursor.execute(query, (tournament_id,))
+        results = cursor.fetchall()
+    return results;
 
 
 def reportMatch(tournament_id, winner, loser):
@@ -125,11 +114,10 @@ def reportMatch(tournament_id, winner, loser):
     
     sql = "INSERT INTO matches (tournament_id, winner_id, loser_id) VALUES (%s,%s,%s)";
     data = (tournament_id, winner, loser)
-    conn = connect()
-    c = conn.cursor()
-    c.execute(sql,data)
-    conn.commit()
-    conn.close
+
+    with get_cursor() as cursor:
+        #execute query
+        cursor.execute(sql,data)
 
  
  
@@ -157,43 +145,8 @@ def swissPairings(tournament_id):
         player1 = currentStandings[i]   #player 1
         player2 = currentStandings[i+1] #player 2
         pairings.append((player1[0],player1[1],player2[0],player2[1])) #append one swisspairing tuple
-
     return pairings #return all paired tuples
 
-def getOpponentWins(tournament_id, player_id):
-    """Helper function to find the opponent match wins sum for player_id in tournament_id
-  
-    Queries for list of opponents and sums up their wins.
 
-    Returns:
-        Tuple with decimal value
-    """
-    #sql to retrieve sum of wins of opponents that current player has won against
-    opponentWinsForGivenPlayerSQL = '''
-    SELECT coalesce(sum(opp_wins.wins),0) from (with 
-        win_temp as (select winner_id, count(winner_id) win_cnt from matches where winner_id in (select id from players) group by winner_id)
-    select 
-        p.id, p.name, 
-        coalesce(w.win_cnt,0) wins 
-    from 
-        players p 
-        left join win_temp w on (p.id = w.winner_id) 
-    where 
-        p.id in (select player_id from tournament_registrations as r where r.tournament_id = (%s))
-        and 
-        p.id in (select m.loser_id as player_id from matches as m where m.winner_id = (%s))
-    ) as opp_wins
-    '''
-    conn = connect()
-    c = conn.cursor()
-
-    #SQL safe parameter insertion
-    c.execute(opponentWinsForGivenPlayerSQL, (tournament_id,player_id))
-    r = c.fetchone() #get the sum of opponent wins returned
-    #print num[0]
-
-    conn.close
-
-    return r #return tuple
 
 
