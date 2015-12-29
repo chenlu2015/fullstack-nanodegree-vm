@@ -1,0 +1,30 @@
+<div ng-include src="'/static/client/shared/header/header.html'" ng-controller="headerCtrl"></div>
+
+<div class="row">
+	<div class="col-md-3">
+		<img class="center-block img-circle" ng-src="{{user.imgUrl}}">
+		<h4 class="text-center">Welcome, {{user.name}}!</h4>
+
+		<p class="text-center">{{user.desc}}</p>
+	</div>
+	<div class="col-md-9">
+		<button class="center-block btn btn-md btn-default">Add New Listing</button>
+		
+		<button type="button" class="btn btn-sm btn-primary pull-right" data-animation="am-flip-x" bs-dropdown aria-haspopup="true" aria-expanded="false">Sort | <i class="fa fa-caret-down"></i>
+		  <br>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+		  <li ng-hide="selectedCategory == 'All'"><a href="" ng-click="select({name:'All'})">All</a></li>
+		  <li ng-repeat="category in ['a','b','c']"><a href="" ng-click="select(category)">{{category}}</a></li>
+		</ul> 
+
+		<br/>
+		<hr>
+
+		<h4 class="text-center"><u>My Listings</u></h4>
+
+	</div>
+
+
+
+</div>

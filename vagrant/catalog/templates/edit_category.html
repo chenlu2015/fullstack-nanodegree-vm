@@ -1,0 +1,10 @@
+<form id='newCategoryForm' action="/api/v1.0/categories/1/edit/" enctype='application/json' method="post">
+	<p>
+		Name: <input type="text" name="name" value = "{{category.name}}" size="30"/>
+	</p>
+
+	<p>
+		Description: <input type="text" name="description" value = "{{category.description}}" size="30" />
+	</p>
+	<input type ="submit" name="submit" value="Update"/>
+</form>

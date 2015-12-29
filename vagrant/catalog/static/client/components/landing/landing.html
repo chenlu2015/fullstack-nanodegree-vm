@@ -1,0 +1,18 @@
+
+<div ng-include src="'/static/client/shared/header/header.html'" ng-controller="headerCtrl"></div>
+<h2>Popular Items</h2>
+_______________________
+<div class="row">
+	<div ng-repeat="img in popularimages" class="col-md-3">
+		<p><img ng-src="{{img.url}}"></p>
+		{{img.name}}
+	</div>
+</div>
+_______________________
+<h2>Recent Additions</h2>
+
+<ul class="example-animate-container">
+    <li  ng-repeat="item in recentAdditions">
+      {{item.name}}: {{item.cost |  currency:"$"}}
+    </li>
+  </ul>

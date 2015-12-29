@@ -1,0 +1,17 @@
+<div ng-include src="'/static/client/shared/header/header.html'" ng-controller="headerCtrl"></div>
+
+<div class="row">
+	<div class="col-sm-3">	
+		<h3>Categories:</h3>
+		<ul>
+			<li ng-class="{orange: categoryId==category.id}" ng-repeat="category in categories.categories"> 
+				<a href="" ng-click="go('/browse/'+category.id)">{{category.name}}</a>
+			</li>
+		</ul>
+	</div>
+	<div class="col-sm-9">
+		<h3>Items:</h3>
+			<p ng-show="categoryId==item.category_id || !categoryId" ng-repeat="item in items">{{item.name}}</p>
+
+	</div>
+</div>
