@@ -66,77 +66,86 @@ def login_required(f):
 def main():
 	return render_template('index.html')
 
-@app.route('/api/v1.0/gconnect',methods=['POST'])
-def gconnect():
-  # if request.args.get('state')!= login_session['state']:
-  #   response = make_response(json.dumps('Invalid state'),401)
-  #   response.headers['Content-Type'] = 'application/json'
-  #   return response
-  code = request.data
-  try:
-    oauth_flow = flow_from_clientsecrets('client_secrets.json',
-      scope='')
-    oauth_flow.redirect_uri = 'postmessage'
-    credentials = oauth_flow.step2_exchange(code)
-  except FlowExchangeError:
-    response = make_response(json.dumps('Failed to upgrade auth code'), 401)
-    response.headers['Content-Type'] = 'application/json'
-    return response
-  access_token = credentials.access_token
-  url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' %access_token)
-  h = httplib2.Http()
-  result = json.loads(h.request(url, 'GET')[1])
-  if result.get('error') is not None:
-    response = make_response(json.dumps(result.get('error')),50)
-    response.headers['Content-Type'] = 'application/json'
-    return response
-  gplus_id = credentials.id_token['sub']
-  if result['user_id'] != gplus_id:
-    response = make_response(json.dumps("token's user ID doesnt match"),401)
-    response.headers['Content-Type'] = 'application/json'
-    return response
-  if result['issued_to'] != CLIENT_ID:
-    response = make_response(json.dumps("Token's client ID doesnt match"), 401)
-    response.headers['Content-Type'] = 'application/json'
-    return response
-  stored_credentials = login_session.get('credentials')
-  stored_gplus_id = login_session.get('gplus_id')
-  if stored_credentials is not None and gplus_id == stored_gplus_id:
-    response = make_response(json.dumps('current user is already connected'),200)
-    response.headers['Content-Type'] = 'application/json'
-    return response
-
-  login_session['credentials'] = credentials
-  login_session['gplus_id'] = gplus_id
-
-  userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
-  params = {'access_token': credentials.access_token, 'alt':'json'}
-  answer = requests.get(userinfo_url, params=params)
-  data = json.loads(answer.text)
-
-  login_session['username'] = data["name"]
-  login_session['picture'] = data["picture"]
-  login_session['email'] = data["email"]
-
-  output = ''
-  output += 'hello: </br>'
-  output += login_session['username']
-  # flash("you are now logged in as %s" %login_session['username'])
-  return output
-
 
 # API Routes
-@app.route ('/api/v1.0/getstate', methods=['GET'])
-def showLogin():
-	state = ''.join(random.choice(string.ascii_uppercase + 
-		string.digits) for x in xrange(32))
-	login_session['state'] = state
-	return "the current sesion state is %s" %login_session['state']
+
+
+#USER ROUTES
+@app.route("/api/v1.0/user/<int:user_id>/", methods=['GET'])
+def get_user_profile(user_id):
+  DBSession = sessionmaker(bind = engine)
+  session = DBSession()
+  try:
+    result = session.query(User).filter_by(id=user_id).first()
+
+    listings = session.query(CatalogItem).filter_by(owner_id=user_id).all()
+    data = []
+    for item in listings:
+      data.append(item.serialize())
+    # print data
+    return jsonify({'user': result.to_json(),'items':data})
+  except NoResultFound:
+    abort(401)
+  finally:
+    session.close()
+
+
+#CATALOG_ITEM ROUTES
+@app.route("/api/v1.0/item/", methods = ['GET','POST'])
+def new_item():
+  if request.method == 'POST':
+    if not request.json or not 'name' in request.json:
+      abort(400)
+
+    DBSession = sessionmaker(bind = engine)
+    session = DBSession()
+    try:
+        categ = session.query(Category).filter_by(name=request.json['category_name']).one()
+    except NoResultFound:
+        categ = Category(name = request.json['category_name'], description="")
+        session.add(categ)
+        session.commit()
+
+
+    newItem = CatalogItem(name = request.json['name'], price=request.json['price'], description=request.json.get('description',""), owner_id=request.json['owner_id'],category_id=categ.id)
+    
+    session.add(newItem)
+    session.commit()
+    session.close()
+    #print 'closing session'
+    # return redirect(url_for('get_categories'), code=302)
+    return jsonify({'status':'success'})
+  elif request.method == 'GET':
+    DBSession = sessionmaker(bind = engine)
+    session = DBSession()
+    items = session.query(CatalogItem).all()
+    data = []
+    for item in items:
+        print item
+        data.append(item.serialize())
+    session.close()
+    return jsonify({'items':data})
+  else:
+    abort(400)
+
+@app.route("/api/v1.0/item/<int:item_id>", methods = ['GET','PUT', 'DELETE'])
+def test(item_id):
+  if request.method == 'PUT':
+    return 'PUT to be implemented server side'
+  elif request.method == 'GET':
+    return 'GET to be implemented server side'
+  elif request.method == 'DELETE':
+    return 'DELETE to be implemented server side'
+  else:
+    abort(400)
 
 
 
-@app.route("/api/v1.0/categories/", methods=['GET'])
+
+#CATEGORY ROUTES
+@app.route("/api/v1.0/categories/", methods=['GET', 'POST'])
 def get_categories():
+    if request.method == 'GET':
 		DBSession = sessionmaker(bind = engine)
 		session = DBSession()
 		categories = session.query(Category).all()
@@ -148,6 +157,10 @@ def get_categories():
 		#print data
 		session.close()
 		return jsonify({'categories':data})
+    elif request.method == 'POST':
+        return 'not implemented'
+    else:
+        abort(400)
 
 @app.route("/api/v1.0/categories/new/", methods = ['GET', 'POST'])
 def new_category():
@@ -211,6 +224,7 @@ def edit_category(category_id):
 	else:
 		abort(400)
 
+#AUTH ROUTES
 @app.route('/api/v1.0/auth/google', methods=['POST'])
 def google():
     access_token_url = 'https://accounts.google.com/o/oauth2/token'
@@ -231,6 +245,8 @@ def google():
     r = requests.get(people_api_url, headers=headers)
     profile = json.loads(r.text)
 
+    # print profile
+
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
     try:
@@ -241,10 +257,13 @@ def google():
         token = create_token(user)
         return jsonify(token=token)
 
+
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
     u = User(google=profile['sub'],
-             name=profile['name'])
+             name=profile['name'],
+             email=profile['email'],
+             picture=profile['picture'])
     session.add(u)
     session.commit()
     token = create_token(u)

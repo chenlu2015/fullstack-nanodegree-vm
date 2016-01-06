@@ -11,7 +11,19 @@
 	</div>
 	<div class="col-sm-9">
 		<h3>Items:</h3>
-			<p ng-show="categoryId==item.category_id || !categoryId" ng-repeat="item in items">{{item.name}}</p>
+			<div ng-show="categoryId==item.category_id || !categoryId" ng-repeat="item in items">
+				<span>Item Name: {{item.name}}</span> 
+				<span class="pull-right" ng-show="item.owner_id == userID">
+					<button type="button" class="btn btn-sm btn-warning" ng-click="edit(item.id)"><i class="fa fa-pencil-square-o"></i>
+					</button>
+					<button type="button" class="btn btn-sm btn-danger" ng-click="delete(item.id)"><i class="fa fa-times-circle-o"></i>
+					</button>
+				</span><br/>
+				
+				<span>Price: {{item.price}}</span><br/>
+				<span>Description: {{item.description}}</span><br/>
+				<hr>
+			</div>
 
 	</div>
 </div>

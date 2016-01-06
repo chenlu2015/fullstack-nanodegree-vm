@@ -25,6 +25,10 @@ catalogApp.config(['$routeProvider',
 			// });
 	}]);
 
+catalogApp.config(function($httpProvider){
+	$httpProvider.defaults.headers.post['Content-Type'] = 'application/json';
+})
+ 
 catalogApp.config(function($authProvider){
 
 	$authProvider.google({

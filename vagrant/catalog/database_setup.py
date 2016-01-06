@@ -34,8 +34,9 @@ class User(Base):
 	github = Column(String(120))
 	linkedin = Column(String(120))
 	twitter = Column(String(120))
+	picture = Column(String(120))
 
-	def __init__(self, email=None, password=None, name=None, facebook=None, github=None, google=None, linkedin=None, twitter=None):
+	def __init__(self, email=None, password=None, name=None, facebook=None, github=None, google=None, linkedin=None, twitter=None, picture=None):
 		if email:
 			self.email = email.lower()
 		if password:
@@ -50,6 +51,8 @@ class User(Base):
 			self.linkedin = linkedin
 		if twitter:
 			self.twitter = twitter
+		if picture:
+			self.picture = picture
 
 	def set_password(self, password):
 		self.password = generate_password_hash(password)
@@ -58,9 +61,9 @@ class User(Base):
 		return check_password_hash(self.password, password)
 
 	def to_json(self):
-		return dict(id=self.id, email=self.email, displayName=self.display_name,
+		return dict(id=self.id, email=self.email, name=self.name,
 			facebook=self.facebook, google=self.google,linkedin=self.linkedin, 
-			twitter=self.twitter,bitbucket=self.bitbucket)
+			twitter=self.twitter, picture=self.picture)
 
 	def serialize(self):
     	#Returns object data in easily serializable format.
@@ -75,13 +78,18 @@ class CatalogItem(Base):
 	__tablename__ = 'catalog_item'
 	id = Column(Integer, primary_key = True)
 	name = Column(String(90), nullable = False)
-	price = Column(Float, nullable = False)
+	price = Column(Float)
 	description = Column(String(255))
 	category_id = Column(Integer, ForeignKey('categories.id'))
 	owner_id = Column(Integer, ForeignKey('users.id'))
 
 	category = relationship(Category)
 	user = relationship(User)
+
+	def to_json(self):
+		return dict(id=self.id, name=self.name, price=self.price, 
+			description=self.description, category_id=self.category_id, 
+			owner_id=self.owner_id)
 
 	def serialize(self):
     	#Returns object data in easily serializable format.

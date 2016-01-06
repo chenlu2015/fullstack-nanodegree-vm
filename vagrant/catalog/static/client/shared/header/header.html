@@ -18,15 +18,19 @@
     	<input type="text" name="main-search" ng-model="q">{{q}}
     	<button type="button" class="btn btn-sm btn-primary" ng-click="go('/browse/'+selectedCategory.id)"> <i class="fa fa-search"></i></button>
 	</div>
-
+{{categories}}
 </div>
-
+isAuthenticated: {{isAuthenticated}} {{userID}}
 <div class="row">
 	<div class="col-sm-12">
 		<button type="button" class="btn btn-md btn-primary" ng-click="go('/browse')">Browse All Categories</button>
-		<button type="button" class="btn btn-md btn-primary pull-right" ng-click="go('/profile')">Account</button>
+		<div class="pull-right">
+			<button type="button" class="btn btn-md btn-primary" ng-click="go('/profile')" ng-show="isAuthenticated">Account</button>
+			<button type="button" class="btn btn-md btn-primary" ng-click="logout()" ng-show="isAuthenticated">Logout</button>
+		</div>
+		<button type="button" class="btn btn-md btn-primary pull-right" ng-click="go('/login')" ng-hide="isAuthenticated">Login/Register</button>
 	</div>
 
 </div>
 
-____________________________
+<hr>

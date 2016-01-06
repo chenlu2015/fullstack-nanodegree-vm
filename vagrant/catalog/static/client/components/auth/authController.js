@@ -1,17 +1,23 @@
-catalogApp.controller('authController', ['$scope', '$auth',
-	function($scope, $auth){
+catalogApp.controller('authController', ['$scope', '$location','$auth',
+	function($scope, $location ,$auth){
 	  $scope.authenticate = function(provider) {
 		  $auth.authenticate(provider).then(function(response){
 		  	console.log('success!!');
-		    console.log(response);
-		    console.log($auth.getPayload());
-		    console.log($auth.isAuthenticated());
-		    $auth.logout();
-		    console.log($auth.isAuthenticated());
+		  	$location.path('/');
+		    // console.log(response);
+		    // console.log($auth.getPayload());
+		    // console.log($auth.isAuthenticated());
+		    // $auth.logout();
+		    // console.log($auth.isAuthenticated());
 		  }, function (err){
 		  	console.log(err);
 		  })
 	  };
+
+	  $scope.logout = function() {
+	  	$auth.logout();
+	  	$location.path('/');
+	  }
 	}]);
 
 

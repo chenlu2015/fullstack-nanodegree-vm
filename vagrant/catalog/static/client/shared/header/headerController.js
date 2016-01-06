@@ -1,9 +1,11 @@
-catalogApp.controller('headerCtrl', ['$scope','$location','categoryService', 
-	function($scope, $location, categoryService){
+catalogApp.controller('headerCtrl', ['$scope','$location','$auth','$route','categoryService', 
+	function($scope, $location, $auth, $route, categoryService){
 
 		// categoryService.getAllCategories(function(data) {
 		// 	$scope.categories = data;
 		// });
+		$scope.isAuthenticated = $auth.isAuthenticated();
+		$scope.userID = $auth.getPayload();
 
 		$scope.selectedCategory = {name: "All"};
 		$scope.select = function(cat){
@@ -24,6 +26,13 @@ catalogApp.controller('headerCtrl', ['$scope','$location','categoryService',
 		$scope.go = function ( path ) {
 		  console.log(path);
 		  $location.path( path );
+		};
+
+		$scope.logout = function() {
+		  $auth.logout();
+		  $location.path('/');
+		  $route.reload();
+		  alert('you have successfully logged out!');
 		};
 
 	}])
