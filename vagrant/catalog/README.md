@@ -1,4 +1,6 @@
-**Catalog App**: A angular/flask application that allows users to login using existing google plus accounts and list items. Items have an associated price, description, name, and image (user uploaded) that will be stored in the database after being added. Users may edit/delete item listings at any time and can browse through all listings.
+#My Catalog Application
+
+**Description**: A angular/flask application that allows users to login using existing google plus accounts and list items. Items have an associated price, description, name, and image (user uploaded) that will be stored in the database after being added. Users may edit/delete item listings at any time and can browse through all listings.
 
 **To Run**:
 1. terminal: vagrant up, vagrant ssh, cd \vagrant\catalog
@@ -22,3 +24,4 @@ Your listings will show up in your account profile page if you wish to modify th
 |GET            | localhost:8080/api/v1.0/categories/<int:category_id>/|
 
 note: categories are created during creation of items and not supported separately
+

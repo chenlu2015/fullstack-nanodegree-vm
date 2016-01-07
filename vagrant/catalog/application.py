@@ -5,13 +5,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from database_setup import Base, Category, User, CatalogItem
 from json import dumps
 from datetime import datetime, timedelta
-
-
-
-#auth imports
 from flask import session as login_session
 import random, string
-
 import os
 import jwt
 from functools import wraps
@@ -37,31 +32,6 @@ DBSession = sessionmaker(bind = engine)
 session = DBSession()
 
 #Application Routes
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not request.headers.get('Authorization'):
-            response = jsonify(message='Missing authorization header')
-            response.status_code = 401
-            return response
-
-        try:
-            payload = parse_token(request)
-        except DecodeError:
-            response = jsonify(message='Token is invalid')
-            response.status_code = 401
-            return response
-        except ExpiredSignature:
-            response = jsonify(message='Token has expired')
-            response.status_code = 401
-            return response
-
-        g.user_id = payload['sub']
-
-        return f(*args, **kwargs)
-
-    return decorated_function
-
 @app.route("/")
 def main():
 	return render_template('index.html')
@@ -69,20 +39,22 @@ def main():
 
 # API Routes
 
-
 #USER ROUTES
 @app.route("/api/v1.0/user/<int:user_id>/", methods=['GET'])
 def get_user_profile(user_id):
+  #get session
   DBSession = sessionmaker(bind = engine)
   session = DBSession()
   try:
+    #try to query for user
     result = session.query(User).filter_by(id=user_id).first()
-
+    #find all items belonging to this user
     listings = session.query(CatalogItem).filter_by(owner_id=user_id).all()
     data = []
+    #organize data
     for item in listings:
       data.append(item.serialize())
-    # print data
+    #return json
     return jsonify({'user': result.to_json(),'items':data})
   except NoResultFound:
     abort(401)
@@ -94,28 +66,27 @@ def get_user_profile(user_id):
 @app.route("/api/v1.0/item/", methods = ['GET','POST'])
 def new_item():
   if request.method == 'POST':
+    #null check
     if not request.json or not 'name' in request.json:
       abort(400)
-
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
+
+    #if creating item and category does not yet exist, create it.
     try:
         categ = session.query(Category).filter_by(name=request.json['category_name']).one()
     except NoResultFound:
         categ = Category(name = request.json['category_name'], description="")
         session.add(categ)
         session.commit()
-
-
+    #create new item and persist it
     newItem = CatalogItem(name = request.json['name'], price=request.json['price'], description=request.json.get('description',""), owner_id=request.json['owner_id'], image=request.json['image'],category_id=categ.id)
-    
     session.add(newItem)
     session.commit()
     session.close()
-    #print 'closing session'
-    # return redirect(url_for('get_categories'), code=302)
     return jsonify({'status':'success'})
   elif request.method == 'GET':
+    #return all catalog items
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
     items = session.query(CatalogItem).all()
@@ -131,11 +102,15 @@ def new_item():
 @app.route("/api/v1.0/item/<int:item_id>/", methods = ['GET','PUT', 'DELETE'])
 def test(item_id):
   if request.method == 'PUT':
+    #PUT request for modifying existing item
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
-    print request.json
+
+
     try:
+      #find item
       item = session.query(CatalogItem).filter_by(id=item_id).one()
+      #replace item values with new values
       item.name = request.json['name']
       item.price = request.json['price']
       item.description = request.json['description']
@@ -145,8 +120,10 @@ def test(item_id):
       try:
         categ = session.query(Category).filter_by(name=request.json['category_name']).one()
       except NoResultFound:
+      #create new category if not exist
         categ = Category(name = request.json['category_name'], description="")
         session.add(categ)
+
       #assign category id
       item.category_id = categ.id
       session.commit()
@@ -155,7 +132,6 @@ def test(item_id):
         abort(404)
     finally:
         session.close()
-    return 'item successfully deleted'
 
   elif request.method == 'GET':
     DBSession = sessionmaker(bind = engine)
@@ -179,7 +155,6 @@ def test(item_id):
         abort(404)
     finally:
         session.close()
-    return 'item successfully deleted'
   else:
     abort(400)
 
@@ -187,6 +162,7 @@ def test(item_id):
 #CATEGORY ROUTES
 @app.route("/api/v1.0/categories/", methods=['GET'])
 def get_categories():
+    #return all categories in db
     if request.method == 'GET':
 		DBSession = sessionmaker(bind = engine)
 		session = DBSession()
@@ -198,13 +174,12 @@ def get_categories():
 		#print data
 		session.close()
 		return jsonify({'categories':data})
-    elif request.method == 'POST':
-        return 'not implemented'
     else:
         abort(400)
 
 @app.route("/api/v1.0/categories/new/", methods = ['GET', 'POST'])
 def new_category():
+  #create new category
 	if request.method == 'POST':
 		#print 'name' in request.form
 		if not request.form or not 'name' in request.form:
@@ -218,6 +193,7 @@ def new_category():
 		#print 'closing session'
 		return redirect(url_for('get_categories'), code=302)
 	elif request.method == 'GET':
+    #page for testing purposes
 		return render_template('new_category_form.html')
 	else:
 		abort(400)
@@ -286,8 +262,6 @@ def google():
     r = requests.get(people_api_url, headers=headers)
     profile = json.loads(r.text)
 
-    # print profile
-
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
     try:
@@ -298,7 +272,7 @@ def google():
         token = create_token(user)
         return jsonify(token=token)
 
-
+    #create user object
     DBSession = sessionmaker(bind = engine)
     session = DBSession()
     u = User(google=profile['sub'],
@@ -308,7 +282,7 @@ def google():
     session.add(u)
     session.commit()
     token = create_token(u)
-    # print token
+
     return jsonify(token=token)
 
 def create_token(user):
@@ -327,26 +301,21 @@ def parse_token(req):
     # return jwt.decode(token, app.config['TOKEN_SECRET'])
     return jwt.decode(token, TOKEN_SECRET)
 
-
-
-
-# @app.route("/api/v1.0/categories/<int:category_id>/delete/", methods=['GET'])
+#helper functions
 
 #error handling
 @app.errorhandler(404)
 def not_found(error):
-	return make_response(jsonify({'error':'Not Found'}), 404)
+  return make_response(jsonify({'error':'Not Found'}), 404)
 
 if __name__ == "__main__":
-	app.secret_key = 'super secret key'
-	app.config['SESSION_TYPE'] = 'filesystem'
+  app.secret_key = 'super secret key'
+  app.config['SESSION_TYPE'] = 'filesystem'
 
-	app.debug = True
-	app.run(host='0.0.0.0',port=8080)
+  app.debug = True
+  app.run(host='0.0.0.0',port=8080)
 
-
-#helper functions
-
+#parse object to json
 def to_json(model):
     """ Returns a JSON representation of an SQLAlchemy-backed object.
     """
