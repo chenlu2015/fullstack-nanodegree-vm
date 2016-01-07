@@ -11,19 +11,35 @@
 	</div>
 	<div class="col-sm-9">
 		<h3>Items:</h3>
+			<div ng-show="items.length == 0">
+				There are currently no items in the catalog.
+			</div>
+
+			<div ng-show="numItemsWithCurrentCategoryID(categoryId)==0 && items.length > 0 && categoryId!=null">
+				No items currently belong to this category.
+			</div>
+
 			<div ng-show="categoryId==item.category_id || !categoryId" ng-repeat="item in items">
-				<span>Item Name: {{item.name}}</span> 
-				<span class="pull-right" ng-show="item.owner_id == userID">
-					<button type="button" class="btn btn-sm btn-warning" ng-click="edit(item.id)"><i class="fa fa-pencil-square-o"></i>
-					</button>
-					<button type="button" class="btn btn-sm btn-danger" ng-click="delete(item.id)"><i class="fa fa-times-circle-o"></i>
-					</button>
-				</span><br/>
-				
-				<span>Price: {{item.price}}</span><br/>
-				<span>Description: {{item.description}}</span><br/>
+				<div class="row">
+					<div class="col-md-4">
+						<img ng-src="{{item.image}}" width="80%"/>
+					</div>
+					<div class="col-md-8">
+						<span>Item Name: {{item.name}}</span> 
+						<span class="pull-right" ng-show="item.owner_id == userID">
+							<button type="button" class="btn btn-sm btn-danger" ng-click="go('/profile')"><i class="fa fa-arrow-right"></i>
+							Edit Listing in Profile
+							</button>
+						</span><br/>
+						
+						<span>Price: {{item.price| currency:"$"}}</span><br/>
+						<span>Description: {{item.description}}</span><br/>
+						
+					</div>
+				</div>
 				<hr>
 			</div>
 
+		
 	</div>
 </div>

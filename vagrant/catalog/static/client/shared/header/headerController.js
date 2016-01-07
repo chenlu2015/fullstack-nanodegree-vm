@@ -1,5 +1,5 @@
-catalogApp.controller('headerCtrl', ['$scope','$location','$auth','$route','categoryService', 
-	function($scope, $location, $auth, $route, categoryService){
+catalogApp.controller('headerCtrl', ['$scope','$location','$auth','$route','categoryService', '$modal',
+	function($scope, $location, $auth, $route, categoryService, $modal){
 
 		// categoryService.getAllCategories(function(data) {
 		// 	$scope.categories = data;
@@ -34,5 +34,23 @@ catalogApp.controller('headerCtrl', ['$scope','$location','$auth','$route','cate
 		  $route.reload();
 		  alert('you have successfully logged out!');
 		};
+
+		$scope.authenticate = function(provider) {
+		  $auth.authenticate(provider).then(function(response){
+		  	console.log('success!!');
+		  	loginModal.$promise.then(loginModal.hide);
+		  	$location.path('/');
+		  }, function (err){
+		  	console.log(err);
+		  })
+	  	};
+
+	  	// Pre-fetch an external template populated with a custom scope
+		var loginModal = $modal({scope: $scope, templateUrl: '/static/client/shared/header/login_modal.html', show: false});
+		// Show when some event occurs (use $promise property to ensure the template has been loaded)
+		$scope.showLogin = function() {
+		  loginModal.$promise.then(loginModal.show);
+		};
+
 
 	}])

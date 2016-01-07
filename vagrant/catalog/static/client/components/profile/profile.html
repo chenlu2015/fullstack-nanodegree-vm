@@ -19,7 +19,7 @@
 		</button>
 		<ul class="dropdown-menu" role="menu">
 		  <li ng-hide="selectedCategory == 'All'"><a href="" ng-click="select({name:'All'})">All</a></li>
-		  <li ng-repeat="category in ['a','b','c']"><a href="" ng-click="select(category)">{{category}}</a></li>
+		  <li ng-repeat="category in ['TBI1','TBI2','TBI3']"><a href="" ng-click="select(category)">{{category}}</a></li>
 		</ul> 
 
 		<br/>
@@ -27,17 +27,21 @@
 
 		<h4 class="text-center"><u>My Listings</u></h4>
 		<div ng-repeat="item in myListings" >
-			<div>
+			<div class="row">
+				<div class="col-md-4">
+					<img ng-src="{{item.image}}" width="80%"/>
+				</div>
+				<div class="col-md-8">
+					<span>Item Name: {{item.name}}</span> 
+					<span class="pull-right">
+					<button type="button" class="btn btn-sm btn-warning" ng-click="showEditModal(item.id)"><i class="fa fa-pencil-square-o"></i>
+					</button>
+					<button type="button" class="btn btn-sm btn-danger" ng-click="delete(item.id)"><i class="fa fa-times-circle-o"></i>
+					</button>
+					</span><br/>
+				</div>
 				
-				<span>Item Name: {{item.name}}</span> 
-				<span class="pull-right">
-				<button type="button" class="btn btn-sm btn-warning" ng-click="edit(item.id)"><i class="fa fa-pencil-square-o"></i>
-				</button>
-				<button type="button" class="btn btn-sm btn-danger" ng-click="delete(item.id)"><i class="fa fa-times-circle-o"></i>
-				</button>
-				</span><br/>
-				
-				<span>Price: {{item.price}}</span><br/>
+				<span>Price: {{item.price | currency:"$"}}</span><br/>
 				<span>Description: {{item.description}}</span><br/>
 				<span>Category: {{getCategoryName(item.category_id)}}</span><br/>
 			</div>

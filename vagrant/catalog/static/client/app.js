@@ -1,4 +1,4 @@
-var catalogApp = angular.module('catalogApp', ['ngRoute', 'mgcrea.ngStrap','satellizer']);
+var catalogApp = angular.module('catalogApp', ['ngAnimate','ngRoute', 'mgcrea.ngStrap','satellizer','flow']);
 
 //routes
 catalogApp.config(['$routeProvider', 

@@ -107,7 +107,7 @@ def new_item():
         session.commit()
 
 
-    newItem = CatalogItem(name = request.json['name'], price=request.json['price'], description=request.json.get('description',""), owner_id=request.json['owner_id'],category_id=categ.id)
+    newItem = CatalogItem(name = request.json['name'], price=request.json['price'], description=request.json.get('description',""), owner_id=request.json['owner_id'], image=request.json['image'],category_id=categ.id)
     
     session.add(newItem)
     session.commit()
@@ -128,22 +128,64 @@ def new_item():
   else:
     abort(400)
 
-@app.route("/api/v1.0/item/<int:item_id>", methods = ['GET','PUT', 'DELETE'])
+@app.route("/api/v1.0/item/<int:item_id>/", methods = ['GET','PUT', 'DELETE'])
 def test(item_id):
   if request.method == 'PUT':
-    return 'PUT to be implemented server side'
+    DBSession = sessionmaker(bind = engine)
+    session = DBSession()
+    print request.json
+    try:
+      item = session.query(CatalogItem).filter_by(id=item_id).one()
+      item.name = request.json['name']
+      item.price = request.json['price']
+      item.description = request.json['description']
+      item.image = request.json['image']
+
+      #check if category exists
+      try:
+        categ = session.query(Category).filter_by(name=request.json['category_name']).one()
+      except NoResultFound:
+        categ = Category(name = request.json['category_name'], description="")
+        session.add(categ)
+      #assign category id
+      item.category_id = categ.id
+      session.commit()
+      return 'success'
+    except NoResultFound:
+        abort(404)
+    finally:
+        session.close()
+    return 'item successfully deleted'
+
   elif request.method == 'GET':
-    return 'GET to be implemented server side'
+    DBSession = sessionmaker(bind = engine)
+    session = DBSession()
+    try:
+      item = session.query(CatalogItem).filter_by(id=item_id).one()
+      return jsonify({'item': item.to_json()})
+    except NoResultFound:
+      abort(404)
+    finally:
+      session.close()
+
   elif request.method == 'DELETE':
-    return 'DELETE to be implemented server side'
+    DBSession = sessionmaker(bind = engine)
+    session = DBSession()
+    try:
+      item = session.query(CatalogItem).filter_by(id=item_id).one()
+      session.delete(item)
+      session.commit()
+    except NoResultFound:
+        abort(404)
+    finally:
+        session.close()
+    return 'item successfully deleted'
   else:
     abort(400)
 
 
-
-
 #CATEGORY ROUTES
-@app.route("/api/v1.0/categories/", methods=['GET', 'POST'])
+@app.route("/api/v1.0/categories/", methods=['GET'])
 def get_categories():
     if request.method == 'GET':
 		DBSession = sessionmaker(bind = engine)
@@ -151,7 +193,6 @@ def get_categories():
 		categories = session.query(Category).all()
 		data = []
 		for c in categories:
-			print c
 			data.append(c.serialize())
 
 		#print data

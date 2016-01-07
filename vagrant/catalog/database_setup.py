@@ -1,6 +1,6 @@
 #db configuration 
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, Float, String, create_engine
+from sqlalchemy import Column, ForeignKey, Integer, Float, String, LargeBinary, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -82,14 +82,14 @@ class CatalogItem(Base):
 	description = Column(String(255))
 	category_id = Column(Integer, ForeignKey('categories.id'))
 	owner_id = Column(Integer, ForeignKey('users.id'))
-
+	image = Column(LargeBinary)
 	category = relationship(Category)
 	user = relationship(User)
 
 	def to_json(self):
 		return dict(id=self.id, name=self.name, price=self.price, 
 			description=self.description, category_id=self.category_id, 
-			owner_id=self.owner_id)
+			owner_id=self.owner_id, image=self.image)
 
 	def serialize(self):
     	#Returns object data in easily serializable format.
@@ -99,7 +99,8 @@ class CatalogItem(Base):
 	   		'price': self.price,
 	   		'description': self.description,
 	   		'category_id': self.category_id,
-	   		'owner_id': self.owner_id
+	   		'owner_id': self.owner_id,
+	   		'image': self.image
 	    }
 
 #run db engine

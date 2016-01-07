@@ -1,7 +1,10 @@
-catalogApp.controller('browseCtrl', ['$scope', '$routeParams','$location', 'categoryService','userService', '$auth', 'itemService',
-	function($scope, $routeParams, $location, categoryService, userService, $auth, itemService){
+catalogApp.controller('browseCtrl', ['$scope', '$routeParams','$location', 'categoryService','userService', '$auth', 'itemService','$route','$filter', 
+	function($scope, $routeParams, $location, categoryService, userService, $auth, itemService, $route, $filter){
 
 		$scope.categoryId = $routeParams.categoryId;
+
+
+
 		if($scope.categoryId) {$scope.browseAll = false;}
 		else {$scope.browseAll = true;}
 
@@ -14,7 +17,13 @@ catalogApp.controller('browseCtrl', ['$scope', '$routeParams','$location', 'cate
 			});
 		}
 
-		
+		$scope.numItemsWithCurrentCategoryID = function(id){
+		  var count = 0;
+		  angular.forEach($scope.items, function(obj, key) {
+		  	if(id == obj.category_id) count +=1;
+		  });
+		  return count;
+		}
 
 
 		categoryService.getAllCategories().then(function(data){
@@ -29,6 +38,23 @@ catalogApp.controller('browseCtrl', ['$scope', '$routeParams','$location', 'cate
 			console.log(err)
 		});
 
+
+		$scope.edit = function(id){
+			itemService.updateItem(id,id).then(function(data){
+				alert(data)			
+			}, function(err) {
+				console.log(err)
+			});
+		}
+
+		$scope.delete = function(id){
+			itemService.deleteItem(id).then(function(data){
+				alert(data)
+				$route.reload()		
+			}, function(err) {
+				console.log(err)
+			});
+		}
 
 
 		// $scope.items = [

@@ -11,16 +11,18 @@ catalogApp.factory('itemService', ['$http',
 				return err
 			});
 		}
+
 		service.getItem = function(id){
-			return $http.get(baseURL+'/item/'+id).then(function(response){
+			return $http.get(baseURL+'/item/'+id + '/').then(function(response){
 				return response.data;
 			}, function(err){
 				return err
 			});
 		}
 
-		service.updateItem = function(id, data){
-			return $http.put(baseURL+'/item/'+id, data).then(function(response){
+		service.updateItem = function(item){
+			console.log(item)
+			return $http.put(baseURL+'/item/'+item.id+'/', item).then(function(response){
 				return response.data
 			}, function(err) {
 				console.log(err)
@@ -28,7 +30,7 @@ catalogApp.factory('itemService', ['$http',
 		}
 
 		service.deleteItem = function(id){
-			return $http.delete(baseURL+'/item/'+id).then(function(response){
+			return $http.delete(baseURL+'/item/'+id+'/').then(function(response){
 				return response.data
 			}, function(err) {
 				console.log(err)
